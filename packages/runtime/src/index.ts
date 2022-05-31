@@ -7,8 +7,7 @@ export {
   canSetFunctionName,
   envStore,
   TypedArray,
-  TryCatch,
-  EnvStore
+  TryCatch
 } from './util'
 
 export {

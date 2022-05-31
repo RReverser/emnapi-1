@@ -22,7 +22,7 @@ function $emnapiCreateFunction<F extends (...args: any[]) => any> (envObject: em
     let r: napi_value
     try {
       r = envObject.callIntoModule((envObject) => {
-        const napiValue = envObject.call_iii(cb, envObject.id, cbinfo.id)
+        const napiValue = envObject.dynCalls.call_iii(cb, envObject.id, cbinfo.id)
         return (!napiValue) ? undefined : envObject.handleStore.get(napiValue)!.value
       })
     } catch (err) {
@@ -51,7 +51,7 @@ function $emnapiCreateFunction<F extends (...args: any[]) => any> (envObject: em
   'var r;' +
   'try{' +
     'r=env.callIntoModule(function(env){' +
-      'var napiValue=env.call_iii(cb,env.id,cbinfo.id);' +
+      'var napiValue=env.dynCalls.call_iii(cb,env.id,cbinfo.id);' +
       'return !napiValue?undefined:env.handleStore.get(napiValue).value;' +
     '});' +
   '}catch(err){' +

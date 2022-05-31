@@ -27,12 +27,6 @@ export class Env implements IStoreValue {
 
   public openHandleScopes: number = 0
 
-  public instanceData = {
-    data: 0,
-    finalize_cb: 0,
-    finalize_hint: 0
-  }
-
   public handleStore!: HandleStore
   public scopeStore!: ScopeStore
   public cbInfoStore!: CallbackInfoStore
@@ -42,19 +36,23 @@ export class Env implements IStoreValue {
   private _rootScope!: HandleScope
   private currentScope: IHandleScope | null = null
 
-  public lastError: ILastError
-
   public tryCatch = new TryCatch()
 
   public static create (
     malloc: (size: number) => number,
     free: (ptr: number) => void,
-    call_iii: (ptr: number, ...args: [number, number]) => number,
-    call_viii: (ptr: number, ...args: [number, number, number]) => void,
-    HEAPU8: Uint8Array
+    dynCalls: IDynamicCalls,
+    Module: any,
+    __emnapi_env_new: () => number,
+    __emnapi_env_free: (ptr: number) => void,
+    _napi_clear_last_error: (env: number) => number,
+    _napi_set_last_error: (env: number, code: number, engine_code: number, _: number) => number
   ): Env {
-    const env = new Env(malloc, free, call_iii, call_viii, HEAPU8)
-    envStore.add(env)
+    const env = new Env(malloc, free, dynCalls, Module, __emnapi_env_new, __emnapi_env_free, _napi_clear_last_error, _napi_set_last_error)
+    // envStore.add(env)
+    const id = __emnapi_env_new()
+    envStore.set(id, env)
+    env.id = id
     env.refStore = new RefStore()
     env.handleStore = new HandleStore(env)
     env.deferredStore = new DeferredStore()
@@ -68,19 +66,14 @@ export class Env implements IStoreValue {
   private constructor (
     public malloc: (size: number) => number,
     public free: (ptr: number) => void,
-    public call_iii: (ptr: number, ...args: [number, number]) => number,
-    public call_viii: (ptr: number, ...args: [number, number, number]) => void,
-    public HEAPU8: Uint8Array
+    public dynCalls: IDynamicCalls,
+    public Module: any,
+    public __emnapi_env_new: () => number,
+    public __emnapi_env_free: (ptr: number) => void,
+    public _napi_clear_last_error: (env: number) => number,
+    public _napi_set_last_error: (env: number, code: number, engine_code: number, _: number) => number
   ) {
     this.id = 0
-    const napiExtendedErrorInfoPtr = malloc(16)
-    this.lastError = {
-      data: napiExtendedErrorInfoPtr,
-      errorMessage: new Int32Array(HEAPU8.buffer, napiExtendedErrorInfoPtr, 4),
-      engineReserved: new Int32Array(HEAPU8.buffer, napiExtendedErrorInfoPtr + 4, 4),
-      engineErrorCode: new Uint32Array(HEAPU8.buffer, napiExtendedErrorInfoPtr + 8, 4),
-      errorCode: new Int32Array(HEAPU8.buffer, napiExtendedErrorInfoPtr + 12, 4)
-    }
   }
 
   public openScope<Scope extends HandleScope> (ScopeConstructor = HandleScope): Scope {
@@ -142,20 +135,11 @@ export class Env implements IStoreValue {
   }
 
   public clearLastError (): napi_status {
-    this.lastError.errorCode[0] = napi_status.napi_ok
-    this.lastError.engineErrorCode[0] = 0
-    this.lastError.engineReserved[0] = 0
-    this.lastError.errorMessage[0] = 0
-
-    return napi_status.napi_ok
+    return this._napi_clear_last_error(this.id)
   }
 
   public setLastError (error_code: napi_status, engine_error_code: uint32_t = 0, engine_reserved: void_p = 0): napi_status {
-    this.lastError.errorCode[0] = error_code
-    this.lastError.engineErrorCode[0] = engine_error_code
-    this.lastError.engineReserved[0] = engine_reserved
-
-    return error_code
+    return this._napi_set_last_error(this.id, error_code, engine_error_code, engine_reserved)
   }
 
   public getReturnStatus (): napi_status {
@@ -176,38 +160,38 @@ export class Env implements IStoreValue {
     if (!supportFinalizer) {
       return NULL
     }
-    if (view.buffer === this.HEAPU8.buffer) {
+    if (view.buffer === this.Module.HEAPU8.buffer) {
       return view.byteOffset
     }
 
     let pointer: void_p
     if (this.typedArrayMemoryMap.has(view)) {
       pointer = this.typedArrayMemoryMap.get(view)!
-      this.HEAPU8.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength), pointer)
+      this.Module.HEAPU8.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength), pointer)
       return pointer
     }
 
     pointer = this.malloc(view.byteLength)
-    this.HEAPU8.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength), pointer)
+    this.Module.HEAPU8.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength), pointer)
     this.typedArrayMemoryMap.set(view, pointer)
     this.memoryPointerDeleter.register(view, pointer)
     return pointer
   }
 
   public getArrayBufferPointer (arrayBuffer: ArrayBuffer): void_p {
-    if ((!supportFinalizer) || (arrayBuffer === this.HEAPU8.buffer)) {
+    if ((!supportFinalizer) || (arrayBuffer === this.Module.HEAPU8.buffer)) {
       return NULL
     }
 
     let pointer: void_p
     if (this.arrayBufferMemoryMap.has(arrayBuffer)) {
       pointer = this.arrayBufferMemoryMap.get(arrayBuffer)!
-      this.HEAPU8.set(new Uint8Array(arrayBuffer), pointer)
+      this.Module.HEAPU8.set(new Uint8Array(arrayBuffer), pointer)
       return pointer
     }
 
     pointer = this.malloc(arrayBuffer.byteLength)
-    this.HEAPU8.set(new Uint8Array(arrayBuffer), pointer)
+    this.Module.HEAPU8.set(new Uint8Array(arrayBuffer), pointer)
     this.arrayBufferMemoryMap.set(arrayBuffer, pointer)
     this.memoryPointerDeleter.register(arrayBuffer, pointer)
     return pointer
@@ -221,11 +205,7 @@ export class Env implements IStoreValue {
     this.scopeStore.dispose()
     this.handleStore.dispose()
     this.tryCatch.extractException()
-    try {
-      this.free(this.lastError.data)
-      this.lastError.data = NULL
-    } catch (_) {}
-    this.lastError = null!
-    envStore.remove(this.id)
+    this.__emnapi_env_free(this.id)
+    envStore.delete(this.id)
   }
 }

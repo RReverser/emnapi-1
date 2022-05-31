@@ -150,3 +150,13 @@ declare const enum napi_key_conversion {
   napi_key_keep_numbers,
   napi_key_numbers_to_strings
 }
+
+declare interface IDynamicCalls {
+  call_i (_ptr: number): int32_t
+  call_vi (_ptr: number, a: int32_t): void
+  call_ii (_ptr: number, a: int32_t): int32_t
+  call_iii (_ptr: number, a: int32_t, b: int32_t): int32_t
+  call_viii (_ptr: number, a: int32_t, b: int32_t, c: int32_t): void
+  call_iiiii (_ptr: number, a: int32_t, b: int32_t, c: int32_t, d: int32_t): int32_t
+  // call_malloc (_size: size_t): void_p
+}

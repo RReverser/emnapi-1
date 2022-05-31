@@ -1,5 +1,4 @@
 import { Env } from './env'
-import { Store } from './Store'
 
 declare const __webpack_public_path__: any
 declare const global: typeof globalThis
@@ -54,13 +53,7 @@ export class TryCatch {
 // eslint-disable-next-line prefer-const
 export let nodeVersionPtr: Pointer<napi_node_version> = NULL
 
-export class EnvStore extends Store<Env> {
-  public constructor () {
-    super(4)
-  }
-}
-
-export const envStore = new EnvStore()
+export const envStore = new Map<number, Env>()
 
 /* export function gc (): void {
   envStore.forEach(envObject => {

@@ -171,12 +171,26 @@ function napi_strict_equals (env: napi_env, lhs: napi_value, rhs: napi_value, re
   })
 }
 
-function napi_detach_arraybuffer (env: napi_env, _arraybuffer: napi_value): napi_status {
-  return _napi_set_last_error(env, napi_status.napi_generic_failure, 0, 0)
-}
+function napi_is_detached_arraybuffer (env: napi_env, arraybuffer: napi_value, result: Pointer<bool>): napi_status {
+  return emnapi.preamble(env, (envObject) => {
+    return emnapi.checkArgs(envObject, [arraybuffer, result], () => {
+      const ab: ArrayBuffer = envObject.handleStore.get(arraybuffer)!.value
+      if (ab.byteLength > 0) {
+        HEAPU8[result] = 0
+        return envObject.getReturnStatus()
+      }
 
-function napi_is_detached_arraybuffer (env: napi_env, _arraybuffer: napi_value, _result: Pointer<bool>): napi_status {
-  return _napi_set_last_error(env, napi_status.napi_generic_failure, 0, 0)
+      try {
+        // eslint-disable-next-line no-new
+        new Uint8Array(ab)
+      } catch (_) {
+        HEAPU8[result] = 1
+        return envObject.getReturnStatus()
+      }
+      HEAPU8[result] = 0
+      return envObject.getReturnStatus()
+    })
+  })
 }
 
 emnapiImplement('napi_typeof', napi_typeof)
@@ -192,5 +206,4 @@ emnapiImplement('napi_is_error', napi_is_error)
 emnapiImplement('napi_is_typedarray', napi_is_typedarray)
 emnapiImplement('napi_is_dataview', napi_is_dataview)
 emnapiImplement('napi_strict_equals', napi_strict_equals)
-emnapiImplement('napi_detach_arraybuffer', napi_detach_arraybuffer, ['napi_set_last_error'])
-emnapiImplement('napi_is_detached_arraybuffer', napi_is_detached_arraybuffer, ['napi_set_last_error'])
+emnapiImplement('napi_is_detached_arraybuffer', napi_is_detached_arraybuffer)
