@@ -144,6 +144,8 @@ declare const emnapiWrap: typeof $emnapiWrap
 function $emnapiWrap (type: WrapType, env: napi_env, js_object: napi_value, native_object: void_p, finalize_cb: napi_finalize, finalize_hint: void_p, result: Pointer<napi_ref>): napi_status {
   return emnapi.preamble(env, (envObject) => {
     return emnapi.checkArgs(envObject, [js_object], () => {
+      if (!emnapi.supportFinalizer) return envObject.setLastError(napi_status.napi_generic_failure, 0, 0)
+
       const value = envObject.handleStore.get(js_object)!
       if (!(value.isObject() || value.isFunction())) {
         return envObject.setLastError(napi_status.napi_invalid_arg)
@@ -179,6 +181,8 @@ declare const emnapiUnwrap: typeof $emnapiUnwrap
 function $emnapiUnwrap (env: napi_env, js_object: napi_value, result: void_pp, action: UnwrapAction): napi_status {
   return emnapi.preamble(env, (envObject) => {
     return emnapi.checkArgs(envObject, [js_object], () => {
+      if (!emnapi.supportFinalizer) return envObject.setLastError(napi_status.napi_generic_failure, 0, 0)
+
       if (action === UnwrapAction.KeepWrap) {
         if (result === NULL) return envObject.setLastError(napi_status.napi_invalid_arg)
       }

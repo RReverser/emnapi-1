@@ -32,27 +32,9 @@ struct napi_env__ {
   struct instance_data_s* instance_data;
 };
 
-napi_env _emnapi_env_new() {
-  napi_env env = (napi_env) malloc(sizeof(struct napi_env__));
-  env->instance_data = NULL;
-  return env;
-}
-
-void _emnapi_env_free(napi_env env) {
-  struct instance_data_s* old_data = env->instance_data;
-  if (old_data != NULL) {
-    if (old_data->finalize_cb != NULL) {
-      old_data->finalize_cb(env, old_data->data, old_data->finalize_hint);
-    }
-    free(old_data);
-  }
-  free(env);
-}
-
 napi_status napi_clear_last_error(napi_env env) {
   env->last_error.error_code = napi_ok;
 
-  // TODO(boingoing): Should this be a callback?
   env->last_error.engine_error_code = 0;
   env->last_error.engine_reserved = NULL;
   env->last_error.error_message = NULL;

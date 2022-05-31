@@ -31,11 +31,8 @@ mergeInto(LibraryManager.library, {
   $emnapi: undefined,
   $emnapi__postset: __EMNAPI_RUNTIME_REPLACE__,
 
-  $napi_clear_last_error: undefined,
-  $napi_set_last_error: undefined,
-
   $emnapiInit__postset: 'emnapiInit();',
-  $emnapiInit__deps: ['$emnapiGetDynamicCalls', '$emnapi', '$napi_clear_last_error', '$napi_set_last_error'],
+  $emnapiInit__deps: ['$emnapiGetDynamicCalls', '$emnapi'],
   $emnapiInit: function () {
     let registered = false
     let emnapiExports: any
@@ -46,10 +43,6 @@ mergeInto(LibraryManager.library, {
 
     let malloc: ((size: number) => number) | undefined
     let free: ((ptr: number) => void) | undefined
-    let __emnapi_env_new: (() => number) | undefined
-    let __emnapi_env_free: ((ptr: number) => void) | undefined
-    let _napi_clear_last_error: ((env: number) => number) | undefined
-    let _napi_set_last_error: ((env: number, code: number, engine_code: number, _: number) => number) | undefined
 
     let _napi_register_wasm_v1: (
       (env: napi_env, exports: napi_value) => napi_value) | undefined
@@ -74,11 +67,7 @@ mergeInto(LibraryManager.library, {
         malloc!,
         free!,
         dynCalls,
-        Module,
-        __emnapi_env_new!,
-        __emnapi_env_free!,
-        _napi_clear_last_error!,
-        _napi_set_last_error!
+        Module
       )
       const scope = env.openScope(emnapi.HandleScope)
       try {
@@ -112,10 +101,6 @@ mergeInto(LibraryManager.library, {
         const malloc_p = HEAP32[ptrs >> 2]
         const free_p = HEAP32[(ptrs + 4) >> 2]
         const key_p = HEAP32[(ptrs + 8) >> 2]
-        const envNew_p = HEAP32[(ptrs + 12) >> 2]
-        const envFree_p = HEAP32[(ptrs + 16) >> 2]
-        const clearLastError_p = HEAP32[(ptrs + 20) >> 2]
-        const setLastError_p = HEAP32[(ptrs + 24) >> 2]
         malloc = function (size: number) {
           return dynCalls.call_ii(malloc_p, size)
         }
@@ -123,18 +108,6 @@ mergeInto(LibraryManager.library, {
           return dynCalls.call_vi(free_p, ptr)
         }
         exportsKey = (key_p ? UTF8ToString(key_p) : 'emnapiExports') || 'emnapiExports'
-        __emnapi_env_new = function () {
-          return dynCalls.call_i(envNew_p)
-        }
-        __emnapi_env_free = function (env: number) {
-          return dynCalls.call_vi(envFree_p, env)
-        }
-        napi_clear_last_error = _napi_clear_last_error = function (env: number) {
-          return dynCalls.call_ii(clearLastError_p, env)
-        }
-        napi_set_last_error = _napi_set_last_error = function (env: number, code: number, engine_code: number, _: number) {
-          return dynCalls.call_iiiii(setLastError_p, env, code, engine_code, _)
-        }
       })
 
       // Module.emnapiModuleRegister = moduleRegister

@@ -26,22 +26,11 @@ typedef napi_value (*napi_addon_register_func)(napi_env env,
   NAPI_MODULE_INITIALIZER_X(napi_register_wasm_v, NAPI_MODULE_VERSION)
 #define NAPI_MODULE(modname, regfunc)                                          \
   EXTERN_C_START                                                               \
-  napi_env _emnapi_env_new();                                                  \
-  void _emnapi_env_free(napi_env env);                                         \
-  napi_status napi_clear_last_error(napi_env env);                             \
-  napi_status                                                                  \
-  napi_set_last_error(napi_env env, napi_status error_code,                    \
-                      uint32_t engine_error_code,                              \
-                      void* engine_reserved);                                  \
   NAPI_MODULE_EXPORT void emnapi_runtime_init(void** ptrs) {                   \
     const char* expkey = EMNAPI_MOD_NAME_X(modname);                           \
     *ptrs = (void*) malloc;                                                    \
     *(ptrs + 1) = (void*) free;                                                \
     *(ptrs + 2) = (void*) expkey;                                              \
-    *(ptrs + 3) = (void*) _emnapi_env_new;                                     \
-    *(ptrs + 4) = (void*) _emnapi_env_free;                                    \
-    *(ptrs + 5) = (void*) napi_clear_last_error;                               \
-    *(ptrs + 6) = (void*) napi_set_last_error;                                 \
   }                                                                            \
   NAPI_MODULE_EXPORT napi_value NAPI_WASM_INITIALIZER(napi_env env,            \
                                                       napi_value exports) {    \

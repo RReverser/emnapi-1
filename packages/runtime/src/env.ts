@@ -42,15 +42,12 @@ export class Env implements IStoreValue {
     malloc: (size: number) => number,
     free: (ptr: number) => void,
     dynCalls: IDynamicCalls,
-    Module: any,
-    __emnapi_env_new: () => number,
-    __emnapi_env_free: (ptr: number) => void,
-    _napi_clear_last_error: (env: number) => number,
-    _napi_set_last_error: (env: number, code: number, engine_code: number, _: number) => number
+    Module: any
   ): Env {
-    const env = new Env(malloc, free, dynCalls, Module, __emnapi_env_new, __emnapi_env_free, _napi_clear_last_error, _napi_set_last_error)
+    const env = new Env(malloc, free, dynCalls, Module)
     // envStore.add(env)
-    const id = __emnapi_env_new()
+    const id = malloc(20 /* sizeof(struct napi_env__) */)
+    Module.HEAP32[(id >> 2) + 4] = 0
     envStore.set(id, env)
     env.id = id
     env.refStore = new RefStore()
@@ -60,6 +57,7 @@ export class Env implements IStoreValue {
     env.cbInfoStore = new CallbackInfoStore()
 
     env._rootScope = HandleScope.create(env, null)
+    env.clearLastError()
     return env
   }
 
@@ -67,11 +65,7 @@ export class Env implements IStoreValue {
     public malloc: (size: number) => number,
     public free: (ptr: number) => void,
     public dynCalls: IDynamicCalls,
-    public Module: any,
-    public __emnapi_env_new: () => number,
-    public __emnapi_env_free: (ptr: number) => void,
-    public _napi_clear_last_error: (env: number) => number,
-    public _napi_set_last_error: (env: number, code: number, engine_code: number, _: number) => number
+    public Module: any
   ) {
     this.id = 0
   }
@@ -135,11 +129,20 @@ export class Env implements IStoreValue {
   }
 
   public clearLastError (): napi_status {
-    return this._napi_clear_last_error(this.id)
+    const p = this.id >> 2
+    this.Module.HEAP32[p + 3] = napi_status.napi_ok
+    this.Module.HEAPU32[p + 2] = 0
+    this.Module.HEAP32[p + 1] = NULL
+    this.Module.HEAP32[p] = NULL
+    return napi_status.napi_ok
   }
 
   public setLastError (error_code: napi_status, engine_error_code: uint32_t = 0, engine_reserved: void_p = 0): napi_status {
-    return this._napi_set_last_error(this.id, error_code, engine_error_code, engine_reserved)
+    const p = this.id >> 2
+    this.Module.HEAP32[p + 3] = error_code
+    this.Module.HEAPU32[p + 2] = engine_error_code
+    this.Module.HEAP32[p + 1] = engine_reserved
+    return error_code
   }
 
   public getReturnStatus (): napi_status {
@@ -205,7 +208,18 @@ export class Env implements IStoreValue {
     this.scopeStore.dispose()
     this.handleStore.dispose()
     this.tryCatch.extractException()
-    this.__emnapi_env_free(this.id)
+
+    const oldData = this.Module.HEAP32[(this.id >> 2) + 4]
+    if (oldData !== NULL) {
+      const oldData32 = oldData >> 2
+      const finalize_cb = this.Module.HEAP32[oldData32 + 1]
+      if (finalize_cb !== NULL) {
+        this.dynCalls.call_viii(finalize_cb, this.id, this.Module.HEAP32[oldData32], this.Module.HEAP32[oldData32 + 2])
+      }
+      this.free(oldData)
+    }
+    this.free(this.id)
+
     envStore.delete(this.id)
   }
 }
