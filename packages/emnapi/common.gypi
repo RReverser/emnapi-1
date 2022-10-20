@@ -10,7 +10,7 @@
             '<!(node -p "require(\'@tybys/emnapi\').include_dir")',
         ],
         'sources': [
-            '<!(node -p "require(\'@tybys/emnapi\').sources.map(x => JSON.stringify(path.relative(process.cwd(), x))).join(\' \')")'
+            '<!@(node -p "require(\'@tybys/emnapi\').sources.map(x => JSON.stringify(path.relative(process.cwd(), x))).join(\' \')")'
         ]
     }
 }
