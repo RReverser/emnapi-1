@@ -1,5 +1,10 @@
 {
     'target_defaults': {
+        'target_conditions': [
+            ['_type=="loadable_module"', {
+                'product_extension': 'mjs',
+            }]
+        ],
         'libraries': [
             '--js-library=<!(node -p "require(\'@tybys/emnapi\').js_library")'
         ],
