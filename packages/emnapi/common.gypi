@@ -5,7 +5,7 @@
                 'product_extension': 'mjs',
             }]
         ],
-        'libraries': [
+        'ldflags': [
             '--js-library=<!(node -p "require(\'@tybys/emnapi\').js_library")'
         ],
         'defines': [
