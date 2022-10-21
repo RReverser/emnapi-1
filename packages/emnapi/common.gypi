@@ -2,7 +2,7 @@
     'target_defaults': {
         'target_conditions': [
             ['_type=="loadable_module"', {
-                'product_extension': 'mjs',
+                'product_extension': 'js',
             }]
         ],
         'ldflags': [
