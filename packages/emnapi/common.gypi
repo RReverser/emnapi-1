@@ -5,11 +5,12 @@
                 'product_extension': 'js',
             }]
         ],
-        'ldflags': [
-            '--js-library=<!(node -p "require(\'@tybys/emnapi\').js_library")'
+        'cflags': [
+           '-pthread'
         ],
-        'defines': [
-            'NAPI_DISABLE_CPP_EXCEPTIONS'
+        'ldflags': [
+            '--js-library=<!(node -p "require(\'@tybys/emnapi\').js_library")',
+            '-pthread'
         ],
         'include_dirs': [
             '<!(node -p "require(\'@tybys/emnapi\').include_dir")',
