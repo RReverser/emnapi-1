@@ -15,6 +15,8 @@
             '--js-library=<!(node -p "require(\'@tybys/emnapi\').js_library")',
             '-sNODEJS_CATCH_EXIT=0',
             '-sNODEJS_CATCH_REJECTION=0',
+            '-sAUTO_JS_LIBRARIES=0',
+            '-sAUTO_NATIVE_LIBRARIES=0',
         ],
         'include_dirs': [
             '<!(node -p "require(\'@tybys/emnapi\').include_dir")',
