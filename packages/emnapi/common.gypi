@@ -17,6 +17,7 @@
             '-sNODEJS_CATCH_REJECTION=0',
             '-sAUTO_JS_LIBRARIES=0',
             '-sAUTO_NATIVE_LIBRARIES=0',
+            '--bind',
         ],
         'include_dirs': [
             '<!(node -p "require(\'@tybys/emnapi\').include_dir")',
