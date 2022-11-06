@@ -1,4 +1,7 @@
 {
+    'variables': {
+      'OS': 'emscripten',
+    },
     'target_defaults': {
         # 'shared_library' / 'loadable_module' does something different on Emscripten
         # and only leads to unsupported linker flags being passed to the linker.
