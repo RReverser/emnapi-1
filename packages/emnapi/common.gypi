@@ -17,6 +17,8 @@
             '-sNODEJS_CATCH_REJECTION=0',
             '-sAUTO_JS_LIBRARIES=0',
             '-sAUTO_NATIVE_LIBRARIES=0',
+            '-sEMBIND_STD_STRING_IS_UTF8=1',
+            '-sPTHREAD_POOL_DELAY_LOAD=1',
             '--bind',
         ],
         'include_dirs': [
