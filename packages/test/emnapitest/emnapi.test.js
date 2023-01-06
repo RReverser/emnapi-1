@@ -15,10 +15,9 @@ module.exports = load('emnapitest').then(test_typedarray => {
 
   const externalResult = test_typedarray.External()
   assert.ok(externalResult instanceof Uint8Array)
-  assert.strictEqual(externalResult.length, 3)
-  assert.strictEqual(externalResult[0], 0)
-  assert.strictEqual(externalResult[1], 1)
-  assert.strictEqual(externalResult[2], 2)
+  assert.deepStrictEqual([...externalResult], [0, 1, 2])
+  test_typedarray.GrowMemory()
+  assert.deepStrictEqual([...externalResult], [0, 1, 2])
 
   const buffer = test_typedarray.NullArrayBuffer()
   assert.ok(buffer instanceof Uint8Array)
