@@ -280,7 +280,10 @@ static napi_value env_cleanup_wrap(napi_env env, napi_callback_info info) {
   return wrap_first_arg(env, info, cleanup_env_finalizer, (void*)ptr_value);
 }
 
-static bool dynamically_initialized = false;
+// Note: `volatile` is used to prevent optimizer from constant-evaluating
+// `dynamically_initialize` - without it, LLVM can do that and inline `true`
+// here which is explicitly not what we want for testing purposes.
+static volatile bool dynamically_initialized = false;
 
 __attribute__((constructor))
 static void dynamically_initialize() {
